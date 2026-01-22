@@ -762,7 +762,7 @@ jobs:
             DIST=$(printf "%05d" $((RANDOM % 500 + 1)))
             BID=$((RANDOM % 9000000 + 10000000))
             echo "注入配置: DIST=$DIST, BID=$BID"                    
-            perl -i -pe "s/echo \"\\\$res\"/echo \"\\\$res-ab$BID\"/g" ./common/scripts/setlocalversion
+            // perl -i -pe "s/echo \"\\\$res\"/echo \"\\\$res-ab$BID\"/g" ./common/scripts/setlocalversion
             tail -n 2 ./common/scripts/setlocalversion
           fi
           
