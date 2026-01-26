@@ -1,4 +1,4 @@
-name: Test Release
+name: Build KSU&SuSFS GKIs and publish release
 
 permissions:
   contents: write
@@ -556,7 +556,7 @@ jobs:
         uses: actions/create-release@v1
         with:
           tag_name: ${{ env.NEW_TAG }}
-          prerelease: true
+          prerelease: false
           release_name: ${{ env.RELEASE_NAME }}
           body: ${{ env.FULL_RELEASE_NOTES }}
           token: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -581,16 +581,3 @@ jobs:
         run: |
           echo "Uploaded assets:"
           gh release view "${{ env.NEW_TAG }}" --json assets -q '.assets[].name'
-
-      - name: send telegram message on push
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
-        run: |
-            curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d "chat_id=$TELEGRAM_CHAT_ID" \
-            -d "message_thread_id=$TELEGRAM_MESSAGE_THREAD_ID" \
-            -d "text=Latest release: 
-            https://github.com/ShirkNeko/GKI_KernelSU_SUSFS/releases/tag/${{ env.NEW_TAG }}
-            ${{ env.RELEASE_NOTES }}"    
