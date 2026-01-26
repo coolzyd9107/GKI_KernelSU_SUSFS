@@ -241,6 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      workflows: write
     needs:
       - check-build-status
       - get_manager
