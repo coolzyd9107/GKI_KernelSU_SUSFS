@@ -3,7 +3,12 @@ name: Build KSU&SuSFS GKIs and publish release
 permissions:
   contents: write
   actions: write
-
+  repository-projects: write
+  artifact-metadata: write
+  attestations: write
+  checks: write
+  deployments: write
+  discussions: write
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
