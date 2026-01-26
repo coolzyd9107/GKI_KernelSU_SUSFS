@@ -1,8 +1,9 @@
 name: Build KSU&SuSFS GKIs and publish release
 
-permissions:
+permissions:  # 移到根级别
   contents: write
   actions: write
+  workflows: write  # 全局配置该权限
 
 concurrency:
   group: release-${{ github.ref }}
