@@ -43,9 +43,9 @@ jobs:
         id: info
         run: |
           gh release view "${{ inputs.target_tag }}" --repo ${{ github.repository }} \
-            --json title,body,isPrerelease > release_info.json
+            --json name,body,isPrerelease > release_info.json
 
-          jq -r '.title' release_info.json > original_title.txt
+          jq -r '.name' release_info.json > original_title.txt
           jq -r '.body' release_info.json > original_body.txt
 
           IS_PRERELEASE=$(jq -r '.isPrerelease' release_info.json)

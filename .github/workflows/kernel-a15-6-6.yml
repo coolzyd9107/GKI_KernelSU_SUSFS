@@ -55,16 +55,6 @@ on:
         required: false
         type: boolean
         default: false
-      get_manager:
-        description: '获取最新KSU管理器和SUS模块?'
-        required: true
-        type: boolean
-        default: true
-      onlyAk3:
-        description: '仅上传AK3压缩包?(无boot,下载更快)'
-        required: false
-        type: boolean
-        default: false
   workflow_call:
     inputs:
       kernelsu_variant:
@@ -89,9 +79,6 @@ on:
         required: false
         type: boolean
       supp_op:
-        required: false
-        type: boolean
-      onlyAk3:
         required: false
         type: boolean
 
@@ -132,11 +119,10 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       supp_op: ${{ inputs.supp_op || false }}
-      only_ak3: ${{ inputs.onlyAk3 || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
 
   get-ksu-manager:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.get_manager }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/get-manager.yml
     secrets: inherit
     with:

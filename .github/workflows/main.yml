@@ -73,14 +73,6 @@ on:
         description: "禁用 SUSFS"
         type: boolean
         default: false
-      get_manager:
-        description: "获取最新管理器"
-        type: boolean
-        default: true
-      onlyAk3:
-        description: "仅上传 AK3 压缩包"
-        type: boolean
-        default: false
 
       # ==================== 构建版本选择 ====================
       build_a12_5_10:
@@ -108,7 +100,6 @@ jobs:
   # ==================== 获取管理器 ====================
   # 下载最新的 KernelSU 管理器 APK 和 SUSFS 模块
   get-manager:
-    if: inputs.get_manager
     uses: ./.github/workflows/get-manager.yml
     secrets: inherit
     with:

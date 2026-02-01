@@ -78,11 +78,6 @@ on:
         required: false
         type: boolean
         default: false
-      only_ak3:
-        description: "仅上传 AnyKernel3 压缩包"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   build-kernel:
@@ -766,7 +761,6 @@ jobs:
 
       # ==================== 创建 AnyKernel3 压缩包 ====================
       - name: 创建 AnyKernel3 压缩包
-        if: ${{ !inputs.only_ak3 }}
         run: |
           cd $ANYKERNEL3
           ZIP_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-AnyKernel3.zip"
@@ -860,24 +854,14 @@ jobs:
             done
           fi
 
-      # ==================== 上传构建产物 (完整包) ====================
-      - name: 上传构建产物 (完整包)
-        if: "!inputs.only_ak3"
+      # ==================== 上传构建产物 ====================
+      - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}
           path: |
             *AnyKernel3.zip
             *.img
-          compression-level: 9
-
-      # ==================== 上传构建产物 (仅 AK3) ====================
-      - name: 上传构建产物 (仅 AK3)
-        if: inputs.only_ak3
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-Anykernel3
-          path: ./AnyKernel3/*
           compression-level: 9
 
       # ==================== 上传补丁冲突文件 ====================
