@@ -118,7 +118,6 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       cancel_susfs: ${{ inputs.cancel_susfs }}
-      onlyAk3: ${{ inputs.onlyAk3 }}
 
   # ==================== Android 13 - 5.15 构建 ====================
   build-a13-5-15:
@@ -133,7 +132,6 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       cancel_susfs: ${{ inputs.cancel_susfs }}
-      onlyAk3: ${{ inputs.onlyAk3 }}
 
   # ==================== Android 14 - 6.1 构建 ====================
   build-a14-6-1:
@@ -148,7 +146,6 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       cancel_susfs: ${{ inputs.cancel_susfs }}
-      onlyAk3: ${{ inputs.onlyAk3 }}
 
   # ==================== Android 15 - 6.6 构建 ====================
   build-a15-6-6:
@@ -163,7 +160,6 @@ jobs:
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
       cancel_susfs: ${{ inputs.cancel_susfs }}
-      onlyAk3: ${{ inputs.onlyAk3 }}
 
   # ==================== 收集补丁冲突文件 ====================
   # 汇总所有构建任务中的 .rej 文件，方便调试补丁问题
@@ -363,25 +359,80 @@ jobs:
       - name: 生成发布说明
         run: |
           cat > release_body.md << EOF
-          此处包含：**${{ env.KSU_NAME }}**、SUSFS ${{ env.SUS_VER }}${{ env.LZ4_SUFFIX }}
+          ## 📦 本次发布内容 / Release Contents
 
-          功能:
-          -> ${{ env.KSU_NAME }}${{ env.KSU_SUFFIX }}${{ env.BRANCH_INFO }}
-          -> SUSFS ඞ ${{ env.SUS_VER }}
+          **${{ env.KSU_NAME }}** + **SUSFS ${{ env.SUS_VER }}**${{ env.LZ4_SUFFIX }}
+
+          ### ✨ 功能特性 / Features
+
+          | 组件 / Component | 状态 / Status |
+          |:---|:---|
+          | ${{ env.KSU_NAME }} | ${{ env.KSU_SUFFIX }}${{ env.BRANCH_INFO }} |
+          | SUSFS | ඞ ${{ env.SUS_VER }} |
+          | BBG 安全补丁 | ${{ env.BBG_STATUS }} |
+          | LZ4KD & ONEPLUS_LZ4K | ${{ env.LZ4_STATUS }} |
+          | LZ4 | v1.10.0 ${{ env.LZ4_STATUS }} |
+
           ${{ env.HOOK_TYPE }}
           ${{ env.MOUNT_TYPE }}
-          -> BBG安全补丁 ${{ env.BBG_STATUS }}
           ${{ env.KPM_LINE }} | 若不支持可[手动修补](https://github.com/zzh20188/GKI_KernelSU_SUSFS/issues/132)
-          -> **LZ4KD&ONEPLUS_LZ4K** ${{ env.LZ4_STATUS }}
-          -> lz4: v1.10.0 ${{ env.LZ4_STATUS }}
-          -> [Unicode零宽绕过修复与内存优化](https://t.me/real5ec1cff/268) 请直接使用Xp模块
-          模块:
-          -> https://github.com/sidex15/ksu_module_susfs
+
+          > 💡 [Unicode 零宽绕过修复](https://t.me/real5ec1cff/268) - 请使用 Xposed 模块
+
+          ### 📥 推荐模块 / Recommended Module
+
+          - https://github.com/sidex15/ksu_module_susfs
+
+          ---
+
+          > [!IMPORTANT]
+          > ### ⚠️ 风险声明 / Risk Disclaimer
+          >
+          > 本项目整合了多个**活跃维护的上游组件**，由于各组件更新频繁且相互依赖，**可能出现以下问题**：
+          >
+          > - 🔄 无限重启 (Bootloop)
+          > - 🐛 功能异常或系统不稳定
+          >
+          > **刷入前请务必：**
+          > 1. 备份原厂 Boot 镜像，确保可随时恢复
+          > 2. 记录当前时间，便于日志分析
+          >
+          > ---
+          >
+          > This project integrates multiple **actively maintained upstream components**. Due to frequent updates and dependencies, **the following issues may occur**:
+          >
+          > - 🔄 Bootloop
+          > - 🐛 Functional issues or system instability
+          >
+          > **Before flashing, please ensure:**
+          > 1. Backup your stock boot image for recovery
+          > 2. Note the current time for log analysis
+
+          <details>
+          <summary>📋 刷入后指南 / Post-Flash Guide</summary>
+
+          #### ✅ 如果正常启动 / If Boot Successful
+
+          恭喜！享受你的新内核吧 🎉
+
+          Congratulations! Enjoy your new kernel 🎉
+
+          #### ❌ 如果无法启动 / If Boot Failed
+
+          1. 恢复原厂 Boot 镜像
+          2. 使用 KernelSU 管理器提取内核日志
+          3. 将日志提交到 [Issues](https://github.com/zzh20188/GKI_KernelSU_SUSFS/issues) 或咨询专业人士
+
+          1. Restore stock boot image
+          2. Extract kernel logs using KernelSU Manager
+          3. Submit logs to [Issues](https://github.com/zzh20188/GKI_KernelSU_SUSFS/issues) or consult experts
+
+          </details>
 
           ---
 
           <details>
-          <summary>提交信息 / Commit Info</summary>
+          <summary>🔗 提交信息 / Commit Info</summary>
 
           **KernelSU (${{ inputs.kernelsu_variant }})**: [${{ env.KSU_REF }}](${{ env.KSU_URL }})
 
@@ -394,9 +445,10 @@ jobs:
           </details>
 
           ---
-          LTO: thin
 
-          点击下方 **【Assets】** 展开资源
+          **LTO**: thin
+
+          📂 点击下方 **Assets** 展开下载 / Click **Assets** below to download
           EOF
 
       # ==================== 生成版本标签 ====================
