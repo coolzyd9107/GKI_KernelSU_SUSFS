@@ -449,31 +449,7 @@ jobs:
 
           # 应用主 SUSFS 补丁到内核
           cd $KERNEL_ROOT/common
-
-          # Fake Patch 机制：为旧版本内核预先添加缺失的变量声明，使 SUSFS 补丁能正确应用
-          FAKE_PATCHED=0
-          GKI_V="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
-
-          if [ "$GKI_V" = "android15-6.6" ]; then
-            if ! grep -qF 'unsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
-              echo "未找到 nr_subpages，正在进行补丁修复"
-              sed -i -e '/int ret = 0, copied = 0;/a \\tunsigned int nr_subpages = __PAGE_SIZE \/ PAGE_SIZE;' \
-                     -e '/int ret = 0, copied = 0;/a \\tpagemap_entry_t \*res = NULL;' ./fs/proc/task_mmu.c
-              FAKE_PATCHED=1
-            fi
-          fi
-
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
-
-          # Revert Fake Patch：删除预先添加的行（SUSFS 补丁会添加自己的）
-          if [ "$FAKE_PATCHED" = 1 ]; then
-            if [ "$GKI_V" = "android15-6.6" ]; then
-              if grep -qF 'unsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
-                sed -i -e '/unsigned int nr_subpages = __PAGE_SIZE \/ PAGE_SIZE;/d' \
-                       -e '/pagemap_entry_t \*res = NULL;/d' ./fs/proc/task_mmu.c
-              fi
-            fi
-          fi
 
           # 应用版本特定修复 (Next/SukiSU 变体)
           if [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
@@ -496,7 +472,7 @@ jobs:
                 patch -p1 < base.c.patch || true
               fi
             fi
-
+          
 
             # Android 13 - 5.15 修复
             if [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.15" ]]; then
@@ -529,6 +505,18 @@ jobs:
               fi
               if [[ "$CURRENT_SUB" -le 75 && "${{ inputs.os_patch_level }}" != "2024-05" ]]; then
                 sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
+              fi
+            fi
+
+            # Android 15 - 6.6 修复
+            if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
+              if [[ "$CURRENT_SUB" -ge 98 ]]; then
+                cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch ./
+                patch -p1 < base.c.patch || true
+              fi
+              if [[ "$CURRENT_SUB" -le 58 ]]; then
+                cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/task_mmu.c.patch ./
+                patch -p1 < task_mmu.c.patch || true
               fi
             fi
           fi
