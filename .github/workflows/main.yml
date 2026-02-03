@@ -38,6 +38,7 @@ on:
         type: choice
         options:
           - SukiSU
+          - ReSukiSU
           - Official
           - Next
           - MKSU
@@ -232,10 +233,11 @@ jobs:
         run: |
           # KSU 显示名称
           case "${{ inputs.kernelsu_variant }}" in
-            "Next")     KSU_NAME="KernelSU-Next" ;;
-            "Official") KSU_NAME="KernelSU" ;;
-            "MKSU")     KSU_NAME="MKSU" ;;
-            "SukiSU")   KSU_NAME="SukiSU" ;;
+            "Next")      KSU_NAME="KernelSU-Next" ;;
+            "Official")  KSU_NAME="KernelSU" ;;
+            "MKSU")      KSU_NAME="MKSU" ;;
+            "SukiSU")    KSU_NAME="SukiSU" ;;
+            "ReSukiSU")  KSU_NAME="ReSukiSU" ;;
           esac
           echo "KSU_NAME=$KSU_NAME" >> $GITHUB_ENV
 
@@ -252,7 +254,7 @@ jobs:
           echo "LZ4_SUFFIX=${{ inputs.use_zram && '、LZ4KD' || '' }}" >> $GITHUB_ENV
 
           # Hook 类型
-          if [ "${{ inputs.kernelsu_variant }}" = "SukiSU" ]; then
+          if [ "${{ inputs.kernelsu_variant }}" = "SukiSU" ] || [ "${{ inputs.kernelsu_variant }}" = "ReSukiSU" ]; then
             echo "HOOK_TYPE=-> SUSFS Inline Hooks" >> $GITHUB_ENV
           else
             echo "HOOK_TYPE=-> KPROBE Hooks" >> $GITHUB_ENV
@@ -302,11 +304,11 @@ jobs:
       # ==================== 确定 KSU 分支 ====================
       # 根据用户选择确定实际的 Git 分支
       - name: 确定 KSU 分支
-        if: inputs.kernelsu_branch == 'Dev(开发)' || inputs.kernelsu_variant == 'MKSU' || inputs.kernelsu_variant == 'SukiSU'
+        if: inputs.kernelsu_branch == 'Dev(开发)' || inputs.kernelsu_variant == 'MKSU' || inputs.kernelsu_variant == 'SukiSU' || inputs.kernelsu_variant == 'ReSukiSU'
         run: |
           case "${{ inputs.kernelsu_variant }}" in
             "Official"|"MKSU") BRANCH="main" ;;
-            "SukiSU") BRANCH="main" ;;
+            "SukiSU"|"ReSukiSU") BRANCH="main" ;;
             "Next") BRANCH="dev" ;;
             *) echo "错误: 未知变体" >&2; exit 1 ;;
           esac
@@ -321,6 +323,7 @@ jobs:
             "Next") REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next.git"; REPO_URL2="KernelSU-Next/KernelSU-Next" ;;
             "MKSU") REPO_URL="https://github.com/5ec1cff/KernelSU.git"; REPO_URL2="5ec1cff/KernelSU" ;;
             "SukiSU") REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"; REPO_URL2="SukiSU-Ultra/SukiSU-Ultra" ;;
+            "ReSukiSU") REPO_URL="https://github.com/ReSukiSU/ReSukiSU.git"; REPO_URL2="ReSukiSU/ReSukiSU" ;;
           esac
 
           if [[ "${{ inputs.kernelsu_branch }}" == "Stable(标准)" && "${{ inputs.kernelsu_variant }}" != "MKSU" ]]; then
@@ -503,8 +506,18 @@ jobs:
       - name: 上传管理器和 SUSFS 模块
         continue-on-error: true
         run: |
-          for f in ./downloaded-artifacts/*Manager*/* ./downloaded-artifacts/susfs-*/*; do
-            [ -f "$f" ] && gh release upload "$NEW_TAG" "$f" || true
+          echo "准备上传 APK 与 SUSFS 模块..."
+          apk_count=$(find ./downloaded-artifacts -type f -name "*.apk" | wc -l || true)
+          sus_count=$(find ./downloaded-artifacts -type f -path "./downloaded-artifacts/susfs-*/*" | wc -l || true)
+          echo "APK files: ${apk_count}"
+          echo "SUSFS files: ${sus_count}"
+          find ./downloaded-artifacts -type f -name "*.apk" -print0 | \
+          while IFS= read -r -d '' f; do
+            gh release upload "$NEW_TAG" "$f" || true
+          done
+          find ./downloaded-artifacts -type f -path "./downloaded-artifacts/susfs-*/*" -print0 | \
+          while IFS= read -r -d '' f; do
+            gh release upload "$NEW_TAG" "$f" || true
           done
 
       # ==================== 上传内核产物 ====================

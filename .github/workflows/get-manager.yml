@@ -72,12 +72,15 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "This is the SukiSU variant"
             git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git KernelSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "This is the ReSukiSU variant"
+            git clone https://github.com/ReSukiSU/ReSukiSU.git KernelSU
           elif [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "This is the Official"
             git clone https://github.com/tiann/KernelSU.git KernelSU
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "This is the Official"
-            git clone https://github.com/5ec1cff/KernelSU.git KernelSU    
+            git clone https://github.com/5ec1cff/KernelSU.git KernelSU
           else
             echo "Unknown variant"
           fi
@@ -88,9 +91,11 @@ jobs:
 
           # 计算KSU版本号
           KSU_GIT_VERSION=$(git rev-list --count HEAD)
-          
+
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             KSU_VERSION=$((40000 + KSU_GIT_VERSION - 2815))
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            KSU_VERSION=$((30700 + KSU_GIT_VERSION))
           elif [ "${{ inputs.kernelsu_variant }}" == "Official" ] || [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             KSU_VERSION=$((20000 + KSU_GIT_VERSION))
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
@@ -120,6 +125,10 @@ jobs:
             echo "SukiSU..."
             REPO="SukiSU-Ultra/SukiSU-Ultra"
             KSUM="Manager"
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "ReSukiSU..."
+            REPO="ReSukiSU/ReSukiSU"
+            KSUM="Manager"
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "MKSU..."
             REPO="5ec1cff/KernelSU"
@@ -135,7 +144,7 @@ jobs:
           
           # 初始化
           NUMBER=0
-          DOWNLOAD_URL=""
+          DOWNLOAD_LIST=""
 
           echo "开始查找包含 'manager' 产物的构建..."
           while true; do
@@ -165,17 +174,27 @@ jobs:
               NUMBER=$((NUMBER + 1))
             else
               echo "$result"
-              DOWNLOAD_URL=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name == "'"$KSUM"'") | .archive_download_url')
+              DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("'"$KSUM"'")) | "\(.name)\t\(.archive_download_url)"')
               break
             fi
 
           done
          
-          # 下载 Manager 文件
-          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o "${{ inputs.kernelsu_variant }}-管理器(${{ env.KSU_VERSION }}).zip" "$DOWNLOAD_URL"
-          echo "Manager 文件已下载为：${{ inputs.kernelsu_variant }}-管理器(${{ env.KSU_VERSION }}).zip"
-          unzip *.zip
-          rm -rf *.zip
+          if [ -z "$DOWNLOAD_LIST" ]; then
+            echo "未获取到可用的 Manager artifact 下载地址列表。"
+            exit 1
+          fi
+          
+          # 下载并解压所有 Manager 产物
+          echo "$DOWNLOAD_LIST" | while IFS=$'\t' read -r NAME URL; do
+            SAFE_NAME=$(echo "$NAME" | tr '/ ' '__')
+            ZIP_NAME="${{ inputs.kernelsu_variant }}-${SAFE_NAME}(${{ env.KSU_VERSION }}).zip"
+            echo "下载 $NAME -> $ZIP_NAME"
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o "$ZIP_NAME" "$URL"
+            mkdir -p "manager-artifacts/$SAFE_NAME"
+            unzip -o "$ZIP_NAME" -d "manager-artifacts/$SAFE_NAME"
+            rm -rf "$ZIP_NAME"
+          done
 
       - name: 添加 SUSFS 模块
         id: add_SUSFS
@@ -227,7 +246,7 @@ jobs:
         with:
           name: ${{ inputs.kernelsu_variant }}-Manager(${{ env.KSU_VERSION }})
           path: |
-            *.apk
+            **/*.apk
 
       - name: 上传SUSFS模块
         if: steps.add_SUSFS.outcome == 'success'

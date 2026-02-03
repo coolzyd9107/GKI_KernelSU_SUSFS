@@ -16,65 +16,52 @@ on:
     inputs:
       # ==================== 基础配置 ====================
       android_version:
-        description: "Android 版本 (如 android12, android13, android14, android15)"
         required: true
         type: string
       kernel_version:
-        description: "内核主版本 (如 5.10, 5.15, 6.1, 6.6)"
         required: true
         type: string
       sub_level:
-        description: "内核子版本号"
         required: true
         type: string
       os_patch_level:
-        description: "安全补丁级别 (如 2024-05)"
         required: true
         type: string
 
       # ==================== KernelSU 配置 ====================
       ksu_variant:
-        description: "KernelSU 变体 (Official/Next/MKSU/SukiSU)"
         required: true
         type: string
       ksu_branch:
-        description: "KernelSU 分支"
         required: true
         type: string
 
       # ==================== 可选配置 ====================
       version:
-        description: "自定义版本名"
         required: false
         type: string
       revision:
-        description: "修订版本"
         required: false
         type: string
 
       # ==================== 功能开关 ====================
       use_zram:
-        description: "启用 ZRAM 增强算法 (LZ4KD, LZ4K_OPLUS)"
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: "启用 BBG 防格机补丁"
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: "启用 KPM 内核补丁模块"
         required: true
         type: boolean
         default: true
       enable_susfs:
-        description: "启用 SUSFS 隐藏功能"
         required: true
         type: boolean
         default: true
       supp_op:
-        description: "支持一加 8E 处理器机型"
         required: false
         type: boolean
         default: false
@@ -250,6 +237,9 @@ jobs:
           if [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
             # SukiSU 使用 ShirkNeko 的 SUSFS 分支
             git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH"
+          elif [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
+            # ReSukiSU 使用 simonpunk 的原版 SUSFS
+            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           else
             # 其他变体使用 simonpunk 的原版 SUSFS
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
@@ -350,7 +340,7 @@ jobs:
             "Stable(标准)")
               case "$variant_input" in
                 "Next") BRANCH="-s stable" ;;
-                "SukiSU") BRANCH="-s builtin" ;;
+                "SukiSU"|"ReSukiSU") BRANCH="-s builtin" ;;
                 *) BRANCH="-" ;;
               esac
               ;;
@@ -358,7 +348,7 @@ jobs:
               case "$variant_input" in
                 "Official"|"MKSU") BRANCH="-s main" ;;
                 "Next") BRANCH="-s dev" ;;
-                "SukiSU") BRANCH="-s builtin" ;;
+                "SukiSU"|"ReSukiSU") BRANCH="-s builtin" ;;
                 *) echo "未知变体: $variant_input" >&2; exit 1 ;;
               esac
               ;;
@@ -368,9 +358,11 @@ jobs:
               ;;
           esac
 
-          # SukiSU 不启用 SUSFS 时强制使用 main 分支
-          if [ "$variant_input" = "SukiSU" ] && [ "${{ inputs.enable_susfs }}" = "false" ]; then
-            BRANCH="-s main"
+          # SukiSU/ReSukiSU 不启用 SUSFS 时强制使用 main 分支
+          if [ "$variant_input" = "SukiSU" ] || [ "$variant_input" = "ReSukiSU" ]; then
+            if [ "${{ inputs.enable_susfs }}" = "false" ]; then
+              BRANCH="-s main"
+            fi
           fi
 
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
@@ -397,6 +389,10 @@ jobs:
             "SukiSU")
               echo "添加 SukiSU..."
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+              ;;
+            "ReSukiSU")
+              echo "添加 ReSukiSU..."
+              curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
           esac
 
@@ -442,8 +438,8 @@ jobs:
                 patch -p1 < "$patch_file" || true
               done
               ;;
-            "SukiSU")
-              echo "SukiSU 使用内置 SUSFS 支持"
+            "SukiSU"|"ReSukiSU")
+              echo "SukiSU/ReSukiSU 使用内置 SUSFS 支持"
               ;;
           esac
 
@@ -451,8 +447,8 @@ jobs:
           cd $KERNEL_ROOT/common
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
-          # 应用版本特定修复 (Next/SukiSU 变体)
-          if [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
+          # 应用版本特定修复 (Next/SukiSU/ReSukiSU 变体)
+          if [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             CURRENT_SUB="${{ inputs.sub_level }}"
             if [[ ! "$CURRENT_SUB" =~ ^[0-9]+$ ]]; then
               CURRENT_SUB=99999
@@ -663,7 +659,7 @@ jobs:
           CONFIG_TMPFS_POSIX_ACL=y
           EOF
 
-          if [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
+          if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             echo "CONFIG_KPM=y" >> "$DEFCONFIG"
           fi
 
@@ -747,8 +743,8 @@ jobs:
 
       # ==================== KPM 补丁 (仅 SukiSU) ====================
       # 为 SukiSU 应用 KPM (Kernel Patch Module) 补丁
-      - name: 应用 KPM 补丁 (仅 SukiSU)
-        if: inputs.use_kpm && inputs.ksu_variant == 'SukiSU'
+      - name: 应用 KPM 补丁 (仅 SukiSU/ReSukiSU)
+        if: inputs.use_kpm && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'ReSukiSU')
         run: |
           case "${{ inputs.android_version }}" in
             "android12"|"android13")

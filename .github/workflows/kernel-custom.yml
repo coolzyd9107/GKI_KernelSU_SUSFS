@@ -54,6 +54,7 @@ on:
           - Next
           - MKSU
           - SukiSU
+          - ReSukiSU
         default: SukiSU
       kernelsu_branch:
         description: "选择 ksu 分支"
