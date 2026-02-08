@@ -1,10 +1,27 @@
-CONFIG_BUILD_TYPE=release
-FEATURE_SUSFS=on
-ENABLE_LZ4=on
-ENABLE_KPM=off
-TARGET_VENDOR=generic
-TARGET_REGION=global
-USE_CCACHE=on
-LOG_LEVEL=info
-PACKAGE_SUFFIX=susfs
-ENABLE_TELEMETRY=off
+# ==================== 自定义提交配置 ====================
+# 本文件用于配置 SUSFS 和 SukiSU 仓库的自定义提交
+#
+# 使用说明:
+#   1. 将 custom 设为 true 启用自定义提交功能
+#   2. 在对应配置项后填入想要使用的 commit hash
+#   3. 留空表示使用该分支的最新提交
+#
+# 示例:
+#   gki-android14-6.1=abc123def456
+#   sukisu=def789abc123
+#
+# ================================================================
+
+# 是否启用自定义提交 (true/false)
+custom=false
+
+# ==================== SUSFS 各分支的 commit hash ====================
+# 仅当 custom=true 时生效
+gki-android12-5.10=
+gki-android13-5.15=
+gki-android14-6.1=
+gki-android15-6.6=
+
+# ==================== SukiSU 的 commit hash ====================
+# 仅当 custom=true 且使用 SukiSU 变体时生效
+sukisu=

@@ -86,6 +86,42 @@ Wiki 涵盖内容：
 
 ---
 
+## 🔧 自定义提交配置
+
+通过 [`config/config`](config/config) 文件可以指定 SUSFS 和 SukiSU 使用特定的 commit。
+
+**什么是提交 (commit)？**
+
+提交是一串哈希字符串，代表仓库在某个时间点的状态。例如将 sukisu 设为 `4b8644515fe6d87a109129e590ccd9d33a855dca`，即使用 1 月 30 日的 SukiSU 版本编译内核。
+
+**为什么要指定提交？**
+
+- 当上游仓库更新引入 bug 或兼容性问题时，可回退到稳定版本
+- 当 SUSFS 与 SukiSU 版本不同步导致编译失败时，可手动指定兼容的版本
+
+**如何获取提交哈希？**
+
+- SUSFS: https://gitlab.com/simonpunk/susfs4ksu
+- SukiSU: https://github.com/SukiSU-Ultra/SukiSU-Ultra
+
+```ini
+# 启用自定义提交
+custom=true
+
+# SUSFS 各分支的 commit hash
+gki-android12-5.10=
+gki-android13-5.15=
+gki-android14-6.1=
+gki-android15-6.6=
+
+# SukiSU 的 commit hash
+sukisu=
+```
+
+> 留空则使用该分支的最新提交。
+
+---
+
 ## 🛠️ 安装后推荐
 
 ### 📦 模块推荐

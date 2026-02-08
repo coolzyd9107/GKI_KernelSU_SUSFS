@@ -245,6 +245,21 @@ jobs:
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           fi
 
+          # 检查是否启用自定义提交
+          CONFIG_FILE="config/config"
+          if [ -f "$CONFIG_FILE" ]; then
+            CUSTOM_ENABLED=$(grep "^custom=" "$CONFIG_FILE" | cut -d'=' -f2)
+            if [ "$CUSTOM_ENABLED" == "true" ]; then
+              CUSTOM_COMMIT=$(grep "^${SUSFS_BRANCH}=" "$CONFIG_FILE" | cut -d'=' -f2)
+              if [ -n "$CUSTOM_COMMIT" ]; then
+                echo "切换 SUSFS 到自定义提交: $CUSTOM_COMMIT"
+                cd susfs4ksu
+                git checkout "$CUSTOM_COMMIT"
+                cd ..
+              fi
+            fi
+          fi
+
           echo "克隆补丁仓库..."
           git clone https://github.com/WildKernels/kernel_patches.git
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
@@ -363,6 +378,19 @@ jobs:
           if [ "$variant_input" = "SukiSU" ] || [ "$variant_input" = "ReSukiSU" ]; then
             if [ "${{ inputs.enable_susfs }}" = "false" ]; then
               BRANCH="-s main"
+            fi
+          fi
+
+          # 检查是否启用自定义提交 (仅对 SukiSU 生效)
+          CONFIG_FILE="config/config"
+          if [ -f "$CONFIG_FILE" ]; then
+            CUSTOM_ENABLED=$(grep "^custom=" "$CONFIG_FILE" | cut -d'=' -f2)
+            if [ "$CUSTOM_ENABLED" == "true" ] && [ "$variant_input" == "SukiSU" ]; then
+              SUKISU_COMMIT=$(grep "^sukisu=" "$CONFIG_FILE" | cut -d'=' -f2)
+              if [ -n "$SUKISU_COMMIT" ]; then
+                BRANCH="-s $SUKISU_COMMIT"
+                echo "SukiSU 使用自定义提交: $SUKISU_COMMIT"
+              fi
             fi
           fi
 
