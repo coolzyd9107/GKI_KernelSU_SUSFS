@@ -511,6 +511,18 @@ jobs:
 
             # Android 12 - 5.10 修复
             if [[ "${{ inputs.android_version }}" == "android12" && "${{ inputs.kernel_version }}" == "5.10" ]]; then
+            
+              # 回退 ReSukiSU 中导致 SUSFS 冲突的提交
+              cd $KERNEL_ROOT/KernelSU
+              echo "回退 KernelSU 提交 e16cf610..."
+              git revert --no-commit e16cf610855b73fd248d9e3609cd993ec667de02 || true
+              cd $KERNEL_ROOT/common
+
+              # 重新下载特定的 SUSFS 补丁
+              echo "下载特定版本的 SUSFS 补丁..."
+              wget -O 50_add_susfs_in_gki-android12-5.10.patch https://gitlab.com/simonpunk/susfs4ksu/-/raw/d410963cbdcd1856ea6a913bae9960f5210886b7/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch
+              patch -p1 < 50_add_susfs_in_gki-android12-5.10.patch || true
+              
               if [[ "$CURRENT_SUB" -le 209 ]]; then
                 sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
               fi
