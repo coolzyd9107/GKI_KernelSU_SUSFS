@@ -561,6 +561,17 @@ jobs:
 
             # Android 15 - 6.6 修复
             if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
+              # 回退 KernelSU 中导致 SUSFS 冲突的提交
+              cd $KERNEL_ROOT/KernelSU
+              echo "回退 KernelSU 提交 e16cf610..."
+              git revert --no-commit e16cf610855b73fd248d9e3609cd993ec667de02 || true
+              cd $KERNEL_ROOT/common
+
+              # 重新下载特定的 SUSFS 补丁
+              echo "下载特定版本的 SUSFS 补丁..."
+              wget -O 50_add_susfs_in_gki-android15-6.6.patch https://gitlab.com/simonpunk/susfs4ksu/-/raw/f77334c982f9970958b856665c4d26ddf75e8248/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch
+              patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
+
               if [[ "$CURRENT_SUB" -ge 98 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch ./
                 patch -p1 < base.c.patch || true
