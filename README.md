@@ -47,7 +47,7 @@
 
 ---
 
-> 💡 零宽字符漏洞修复请使用 [Unicode零宽修复模块](https://t.me/real5ec1cff/268) (Xposed)
+## 💡 零宽字符漏洞修复请使用 [Unicode零宽修复模块](https://t.me/real5ec1cff/268) (Xposed)
 
 ---
 
