@@ -550,8 +550,7 @@ jobs:
 
             # Android 14 - 6.1 修复
             if [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" ]]; then
-              # 应用 base.c 修复补丁以解决 SUSFS 符号未定义问题
-              if [ -f "$KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a14-6.1/base.c.patch" ]; then
+              if [[ "$CURRENT_SUB" -ge 145 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a14-6.1/base.c.patch ./
                 patch -p1 < base.c.patch || true
               fi
@@ -562,24 +561,13 @@ jobs:
 
             # Android 15 - 6.6 修复
             if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
-              # 应用 base.c 修复补丁以解决 SUSFS 符号未定义问题
-              if [ -f "$KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch" ]; then
+              if [[ "$CURRENT_SUB" -ge 98 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch ./
                 patch -p1 < base.c.patch || true
               fi
               if [[ "$CURRENT_SUB" -le 58 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/task_mmu.c.patch ./
                 patch -p1 < task_mmu.c.patch || true
-              fi
-              # 修复 namei.c 中 susfs_is_inode_sus_path 函数调用参数不匹配问题
-              # 该函数只接受一个参数 (struct inode *inode)，但被错误地调用了两个参数
-              if [ -f "fs/namei.c" ]; then
-                sed -i 's/susfs_is_inode_sus_path(mnt_idmap(mnt), dentry->d_inode)/susfs_is_inode_sus_path(dentry->d_inode)/g' fs/namei.c
-                sed -i 's/susfs_is_inode_sus_path(idmap, dentry->d_inode)/susfs_is_inode_sus_path(dentry->d_inode)/g' fs/namei.c
-                sed -i 's/susfs_is_inode_sus_path(mnt_idmap(nd->path.mnt), dentry->d_inode)/susfs_is_inode_sus_path(dentry->d_inode)/g' fs/namei.c
-                sed -i 's/susfs_is_inode_sus_path(mnt_idmap(mnt), d->d_inode)/susfs_is_inode_sus_path(d->d_inode)/g' fs/namei.c
-                sed -i 's/susfs_is_inode_sus_path(mnt_idmap(mnt), old_dentry->d_inode)/susfs_is_inode_sus_path(old_dentry->d_inode)/g' fs/namei.c
-                sed -i 's/susfs_is_inode_sus_path(mnt_idmap(mnt), new_dentry->d_inode)/susfs_is_inode_sus_path(new_dentry->d_inode)/g' fs/namei.c
               fi
             fi
           fi
@@ -727,9 +715,7 @@ jobs:
           EOF
 
           if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
-            if [ "${{ inputs.use_kpm }}" == "true" ]; then
-              echo "CONFIG_KPM=y" >> "$DEFCONFIG"
-            fi
+            echo "CONFIG_KPM=y" >> "$DEFCONFIG"
           fi
 
           # 移除 defconfig 检查
@@ -965,7 +951,7 @@ jobs:
 
       # ==================== 上传补丁冲突文件 ====================
       - name: 上传补丁冲突文件
-        if: always() && env.REJ_COUNT != '0'
+        if: always() && env.REJ_COUNT > 0
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-Rejects
