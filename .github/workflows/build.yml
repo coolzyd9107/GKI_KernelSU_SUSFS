@@ -956,7 +956,7 @@ jobs:
       # ==================== 检查补丁冲突 ====================
       # 如果存在 .rej 文件，说明补丁应用失败，构建应该失败
       - name: 检查补丁冲突
-        if: env.REJ_COUNT != '0'
+        if: env.REJ_COUNT && env.REJ_COUNT != '0'
         run: |
           echo "错误: 发现 $REJ_COUNT 个补丁冲突文件 (.rej)"
           echo "请检查上传的 Rejects 产物以查看具体的冲突内容"
