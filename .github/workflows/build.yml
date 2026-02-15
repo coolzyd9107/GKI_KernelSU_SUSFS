@@ -260,6 +260,10 @@ jobs:
             fi
           fi
 
+          SUSFS_LATEST_COMMIT_DATE=$(git -C susfs4ksu log -1 --date=format:'%Y-%m-%d %H:%M:%S %z' --format='%cd')
+          echo "SUSFS_LATEST_COMMIT_DATE=$SUSFS_LATEST_COMMIT_DATE" >> $GITHUB_ENV
+          echo "SUSFS 仓库最新提交日期: $SUSFS_LATEST_COMMIT_DATE"
+
           echo "克隆补丁仓库..."
           git clone https://github.com/WildKernels/kernel_patches.git
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
@@ -452,6 +456,14 @@ jobs:
               curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
           esac
+
+          if [ -d "KernelSU/.git" ]; then
+            KSU_LATEST_COMMIT_DATE=$(git -C KernelSU log -1 --date=format:'%Y-%m-%d %H:%M:%S %z' --format='%cd')
+            echo "KSU_LATEST_COMMIT_DATE=$KSU_LATEST_COMMIT_DATE" >> $GITHUB_ENV
+            echo "KSU 仓库最新提交日期: $KSU_LATEST_COMMIT_DATE"
+          else
+            echo "KSU_LATEST_COMMIT_DATE=未知" >> $GITHUB_ENV
+          fi
 
       # ==================== 配置 SukiSU 管理器信息 ====================
       - name: 配置 SukiSU 管理器信息
@@ -786,7 +798,8 @@ jobs:
             echo "等待适配即可，你有能力则自己去SUKISU仓库提交代码，"
             echo "::endgroup::"
             
-
+            echo "当前 KSU 最新提交日期: ${KSU_LATEST_COMMIT_DATE}"
+            echo "当前 SUSFS 最新提交日期: ${SUSFS_LATEST_COMMIT_DATE}"
             set -ex
             cd "$KERNEL_ROOT"
 
@@ -806,7 +819,9 @@ jobs:
             echo "一般情况下不会出错，除非KSU仓库和SUSFS仓库代码不同。"
             echo "不要问，不要急，这跟你怎么努力，或者跟我反馈没关系，因为这跟我无关。"
             echo "等待适配即可，你有能力则自己去SUKISU仓库提交代码，"
-
+            echo "当前 KSU 最新提交日期: ${KSU_LATEST_COMMIT_DATE}"
+            echo "当前 SUSFS 最新提交日期: ${SUSFS_LATEST_COMMIT_DATE}"
+            echo "如果日期不同或相差过远则补丁失效、编译失败"
       # ==================== KPM 补丁 (仅 SukiSU) ====================
       # 为 SukiSU 应用 KPM (Kernel Patch Module) 补丁
       - name: 应用 KPM 补丁 (SukiSU/ReSukiSU/Next)

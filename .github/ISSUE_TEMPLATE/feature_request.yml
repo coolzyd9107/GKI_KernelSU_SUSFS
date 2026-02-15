@@ -1,27 +1,29 @@
-name: Feature Request
-description: Create a feature request
-labels: [Feature Request]
+name: "Feature Request / 功能请求"
+description: "Suggest a feature / 建议新功能"
+labels: ["enhancement"]
 
 body:
-  - type: textarea
+  - type: markdown
     attributes:
-        label: Describe the feature
-        description: A clear and concise description of what the feature is.
+      value: |
+        **Please describe your request / 请描述您的需求**
+
+  - type: textarea
+    id: feature
+    attributes:
+      label: "Feature Description / 功能描述"
+      description: "Describe the feature you want / 描述您想要的功能"
     validations:
-        required: true
-      
+      required: true
 
   - type: textarea
+    id: reason
     attributes:
-        label: Link to documentation 
-        description:  A clear and concise documentation.
-    
-  - type: textarea
-    attributes:
-        label: Screenshots
-        description: If applicable, add screenshots to help explain your problem.
+      label: "Use Case / 使用场景"
+      description: "Why do you need this feature / 为什么需要此功能"
 
   - type: textarea
+    id: additional
     attributes:
-        label: Additional context
-        description: Add any other context here.
+      label: "Additional Info / 补充信息"
+      description: "Any other context, links or screenshots / 其他相关信息、链接或截图"
