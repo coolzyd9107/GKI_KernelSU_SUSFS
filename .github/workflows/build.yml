@@ -502,6 +502,17 @@ jobs:
           cd $KERNEL_ROOT/common
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
+          # 确保 base.c 正确包含 susfs_def.h（修复旧内核版本补丁行号不匹配问题）
+          if grep -q "CONFIG_KSU_SUSFS_SUS_MAP" ./fs/proc/base.c && ! grep -q "linux/susfs_def.h" ./fs/proc/base.c; then
+            # 优先使用 dma-buf.h 作为锚点，不存在则使用 cpufreq_times.h
+            if grep -q "linux/dma-buf.h" ./fs/proc/base.c; then
+              sed -i '/#include <linux\/dma-buf.h>/a\#ifdef CONFIG_KSU_SUSFS_SUS_MAP\n#include <linux/susfs_def.h>\n#endif' ./fs/proc/base.c
+            else
+              sed -i '/#include <linux\/cpufreq_times.h>/a\#ifdef CONFIG_KSU_SUSFS_SUS_MAP\n#include <linux/susfs_def.h>\n#endif' ./fs/proc/base.c
+            fi
+            echo "已修复 base.c 缺失的 susfs_def.h 头文件包含"
+          fi
+
           # 应用版本特定修复 (Next/SukiSU/ReSukiSU 变体)
           if [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             CURRENT_SUB="${{ inputs.sub_level }}"
@@ -595,6 +606,13 @@ jobs:
 
           if [ -f "fs/f2fs/Makefile" ] && ! grep -qF "f2fs-\$(CONFIG_F2FS_IOSTAT) += iostat.o" "fs/f2fs/Makefile"; then
             echo "f2fs-\$(CONFIG_F2FS_IOSTAT) += iostat.o" >> "fs/f2fs/Makefile"
+          fi
+
+          # 修复 LZ4 1.10.0 新增符号的 KMI 检查（Android 15-6.6 需要）
+          if [ "${{ inputs.kernel_version }}" == "6.6" ]; then
+            for symbol in LZ4_compress_fast_continue LZ4_resetStreamHC; do
+              grep -q "$symbol" android/abi_gki_aarch64 || echo "$symbol" >> android/abi_gki_aarch64
+            done
           fi
 
       # ==================== 应用 LZ4KD 和 LZ4K_OPLUS 补丁 ====================
