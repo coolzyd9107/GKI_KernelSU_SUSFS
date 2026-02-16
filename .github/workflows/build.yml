@@ -1,5 +1,5 @@
 # ========================================
-# GKI 内核构建工作流-SUSFS
+# GKI 内核构建工作流
 # ========================================
 # 此工作流负责编译 Android GKI 内核，支持多种 KernelSU 变体和 SUSFS
 # 通过 workflow_call 被其他工作流调用，不直接手动触发
@@ -514,17 +514,6 @@ jobs:
           cd $KERNEL_ROOT/common
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
-          # 确保 base.c 正确包含 susfs_def.h（修复旧内核版本补丁行号不匹配问题）
-          if grep -q "CONFIG_KSU_SUSFS_SUS_MAP" ./fs/proc/base.c && ! grep -q "linux/susfs_def.h" ./fs/proc/base.c; then
-            # 优先使用 dma-buf.h 作为锚点，不存在则使用 cpufreq_times.h
-            if grep -q "linux/dma-buf.h" ./fs/proc/base.c; then
-              sed -i '/#include <linux\/dma-buf.h>/a\#ifdef CONFIG_KSU_SUSFS_SUS_MAP\n#include <linux/susfs_def.h>\n#endif' ./fs/proc/base.c
-            else
-              sed -i '/#include <linux\/cpufreq_times.h>/a\#ifdef CONFIG_KSU_SUSFS_SUS_MAP\n#include <linux/susfs_def.h>\n#endif' ./fs/proc/base.c
-            fi
-            echo "已修复 base.c 缺失的 susfs_def.h 头文件包含"
-          fi
-
           # 应用版本特定修复 (Next/SukiSU/ReSukiSU 变体)
           if [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             CURRENT_SUB="${{ inputs.sub_level }}"
@@ -573,7 +562,10 @@ jobs:
 
             # Android 14 - 6.1 修复
             if [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" ]]; then
-              # base.c.patch 已由主 SUSFS 补丁覆盖，无需单独应用
+              if [[ "$CURRENT_SUB" -ge 145 ]]; then
+                cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a14-6.1/base.c.patch ./
+                patch -p1 < base.c.patch || true
+              fi
               if [[ "$CURRENT_SUB" -le 75 && "${{ inputs.os_patch_level }}" != "2024-05" ]]; then
                 sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
               fi
@@ -581,7 +573,10 @@ jobs:
 
             # Android 15 - 6.6 修复
             if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
-              # base.c.patch 已由主 SUSFS 补丁覆盖，无需单独应用
+              if [[ "$CURRENT_SUB" -ge 98 ]]; then
+                cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch ./
+                patch -p1 < base.c.patch || true
+              fi
               if [[ "$CURRENT_SUB" -le 58 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/task_mmu.c.patch ./
                 patch -p1 < task_mmu.c.patch || true
@@ -618,13 +613,6 @@ jobs:
 
           if [ -f "fs/f2fs/Makefile" ] && ! grep -qF "f2fs-\$(CONFIG_F2FS_IOSTAT) += iostat.o" "fs/f2fs/Makefile"; then
             echo "f2fs-\$(CONFIG_F2FS_IOSTAT) += iostat.o" >> "fs/f2fs/Makefile"
-          fi
-
-          # 修复 LZ4 1.10.0 新增符号的 KMI 检查（Android 15-6.6 需要）
-          if [ "${{ inputs.kernel_version }}" == "6.6" ]; then
-            for symbol in LZ4_compress_fast_continue LZ4_resetStreamHC; do
-              grep -q "$symbol" android/abi_gki_aarch64 || echo "$symbol" >> android/abi_gki_aarch64
-            done
           fi
 
       # ==================== 应用 LZ4KD 和 LZ4K_OPLUS 补丁 ====================
