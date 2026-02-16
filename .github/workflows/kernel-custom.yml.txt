@@ -1,0 +1,126 @@
+name: 内核构建 - 自定义版本
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      # ==================== 内核版本配置 ====================
+      android_version:
+        description: "Android 版本"
+        required: true
+        type: choice
+        options:
+          - android12
+          - android13
+          - android14
+          - android15
+        default: android12
+      kernel_version:
+        description: "内核版本"
+        required: true
+        type: choice
+        options:
+          - "5.10"
+          - "5.15"
+          - "6.1"
+          - "6.6"
+        default: "5.10"
+      sub_level:
+        description: "子版本号 (如 66, 198, X)"
+        required: true
+        type: string
+        default: "66"
+      os_patch_level:
+        description: "安全补丁级别 (如 2022-01, lts)"
+        required: true
+        type: string
+        default: "2022-01"
+      revision:
+        description: "修订版本 (如 r11, 仅 5.10 需要)"
+        required: false
+        type: string
+        default: "r11"
+
+      # ==================== KernelSU 配置 ====================
+      kernelsu_variant:
+        description: "KernelSU 变体"
+        required: true
+        type: choice
+        options:
+          - Official
+          - Next
+          - MKSU
+          - SukiSU
+          - ReSukiSU
+        default: SukiSU
+      kernelsu_branch:
+        description: "KSU 分支"
+        required: true
+        type: choice
+        options:
+          - Stable(标准)
+          - Dev(开发)
+          - Other(其他/指定)
+        default: Stable(标准)
+
+      # ==================== 可选配置 ====================
+      version:
+        description: "自定义版本名 (可选)"
+        required: false
+        type: string
+
+      # ==================== 功能开关 ====================
+      use_zram:
+        description: "启用 ZRAM 增强算法"
+        required: true
+        type: boolean
+        default: true
+      use_bbg:
+        description: "启用 BBG 防格机"
+        required: true
+        type: boolean
+        default: true
+      use_kpm:
+        description: "启用 KPM 功能"
+        required: true
+        type: boolean
+        default: true
+      cancel_susfs:
+        description: "禁用 SUSFS"
+        required: true
+        type: boolean
+        default: false
+      supp_op:
+        description: "启用一加 8E 支持"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build-custom-kernel:
+    name: "${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.android_version }}-${{ inputs.os_patch_level }}"
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      android_version: ${{ inputs.android_version }}
+      kernel_version: ${{ inputs.kernel_version }}
+      sub_level: ${{ inputs.sub_level }}
+      os_patch_level: ${{ inputs.os_patch_level }}
+      revision: ${{ inputs.revision || '' }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      ksu_branch: ${{ inputs.kernelsu_branch }}
+      version: ${{ inputs.version || '' }}
+      use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
+      use_kpm: ${{ inputs.use_kpm }}
+      supp_op: ${{ inputs.supp_op || false }}
+      enable_susfs: ${{ !inputs.cancel_susfs }}
+
+  get-ksu-manager:
+    uses: ./.github/workflows/get-manager.yml
+    secrets: inherit
+    with:
+      kernelsu_variant: ${{ inputs.kernelsu_variant }}
