@@ -7,7 +7,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/coolzyd9107/GKI_KernelSU_SUSFS?style=for-the-badge&logo=android&color=green)](https://github.com/coolzyd9107/GKI_KernelSU_SUSFS/releases)
 [![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-green)](https://gitlab.com/simonpunk/susfs4ksu)
-[![Telegram](https://img.shields.io/badge/Telegram-Channel)(https://t.me/UnofficialReSukiSUGKI)
+[![Telegram](https://img.shields.io/static/v1?label=Telegram&message=Channel&color=0088cc)](https://t.me/UnofficialReSukiSUGKI)
 
 ---
 
